@@ -1,0 +1,130 @@
+<!doctype html>
+<html>
+<head>
+  <title>test</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="format-detection" content="telephone=no">
+  <meta name="msapplication-tap-highlight" content="no">
+  <script src="wjs-setrem.js?rev=2.2.0"></script>
+  <link rel="stylesheet" href="spinningwheel.css">
+  <style>
+    /* 全局样式 */
+    *{ font-family: '微软雅黑', 'Microsoft YaHei', Helvetica, STHeiTi, Sans-serif; }
+    button, input[type='button'], input[type='reset'], input[type='submit']{ -webkit-appearance: none; outline: none; border: none; background: none; }
+    [ms-controller] [hidden], .hidden { display: none !important; }
+
+    /* 页面样式 */
+    body { background: #85c226; }
+    h3 { margin-top: .3rem; font-size: .4rem; color: #fff; text-align: center; }
+    button { display: block; margin: .2rem auto; width: 4rem; line-height: .8rem; font-size: .32rem; background: #039702; border: none; border-radius: .15rem; color: #fff; }
+    button:active { background: #037702; }
+
+    /* 时间控制器 */
+    #sw-wrapper { position: fixed; }
+    #sw-fixed { display: none; position: fixed; left: 0; right: 0; top:0; bottom: 0; background: rgba(0,0,0,.2); }
+    #sw-header { background: #039702; }
+    #sw-tip { font-size: .35rem; }
+    #sw-slots div{ border-left: none; }
+  </style>
+</head>
+
+<body ms-controller="timeSelector">
+  <!-- 黑色遮罩 -->
+  <div id="sw-fixed" ms-click="selectCancel"></div>
+  <!-- 内容 -->
+  <h3>时间选择器</h3>
+  <button id="onSelector" ms-click="selectTime(1)" hidden>上班时间 {{onTime}}</button>
+  <button id="offSelector" ms-click="selectTime(2)" hidden>下班时间 {{offTime}}</button>
+
+  <!-- javascript -->
+  <!-- <script src="zepto.js"></script> -->
+  <script src="avalon-mobile-shim.js"></script>
+  <script src="spinningwheel.js?v=1.03"></script>
+  <script>
+    avalon.ready(function() {
+      var vm = avalon.define({
+        $id: "timeSelector",
+        onTime: "", // 上班时间
+        offTime: "", // 下班时间
+
+        // 选择时间
+        selectTime: function(type){
+          if( vm.animate.animeLoading ){ return; }
+
+          var times = { 1: '上午', 2: '下午' };
+          var am = { 0:'00', 1:'01', 2:'02', 3:'03', 4:'04', 5:'05', 6:'06', 7:'07', 8:'08', 9:'09', 10:'10', 11:'11' };
+          var pm = { 0:'00', 1:'10', 2:'20', 3:'30', 4:'40', 5:'50' };
+
+          if(type === 1){
+            SpinningWheel.addSlot(times, 'center', 1);
+            SpinningWheel.addSlot(am, 'center', 9);
+            SpinningWheel.addSlot(pm, 'center', 0);
+            SpinningWheel.setDoneAction(vm.onSelectDone);
+            SpinningWheel.setCancelAction(vm.selectCancel);
+            SpinningWheel.init({
+              title: '上班时间' ,
+              is3D: true
+            });
+          }
+          if(type === 2){
+            SpinningWheel.addSlot(times, 'center', 2);
+            SpinningWheel.addSlot(am, 'center', 5);
+            SpinningWheel.addSlot(pm, 'center', 0);
+            SpinningWheel.setDoneAction(vm.offSelectDone);
+            SpinningWheel.setCancelAction(vm.selectCancel);
+            SpinningWheel.init({
+              title: '下班时间' ,
+              is3D: true
+            });
+          }
+
+          document.getElementById('sw-fixed').style.display = 'block'; // 显示黑色遮罩
+          SpinningWheel.open();
+        },
+
+        // 上班确定事件
+        onSelectDone: function(){
+          var results = SpinningWheel.getSelectedValues();
+          vm.onTime = results.values[0] + results.values[1] + ":" + results.values[2];
+
+          vm.animate.loading();
+
+          // 打印提交结果日志
+          var data = (results.keys[0]==2? 12:0)+ +results.values[1];
+          data = data<10? '0'+data:data;
+          console.log( data + ':' + results.values[2]);
+        },
+
+        // 下班确定事件
+        offSelectDone: function(){
+          var results = SpinningWheel.getSelectedValues();
+          vm.offTime = results.values[0] + results.values[1] + ":" + results.values[2];
+          vm.animate.loading();
+        },
+
+        // 取消事件
+        selectCancel: function(){
+          SpinningWheel.close();
+          vm.animate.loading();
+        },
+
+        // 动画中防误操作
+        animate: {
+          animeLoading: false, // 指示动画中
+          loading: function(){
+            var self = this;
+            document.getElementById('sw-fixed').style.display = 'none'; // 隐藏黑色遮罩
+            self.animeLoading = true;
+            setTimeout(function(){
+              self.animeLoading = false;
+            },450);
+          }
+        }
+      });
+      avalon.scan();
+    });
+  </script>
+</body>
+</html>
